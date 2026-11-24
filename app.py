@@ -1,5 +1,5 @@
 
-from dash import Dash, html, dcc
+from dash import Dash, html, dcc, Input, Output, State
 import plotly.express as px
 import pandas as pd
 
@@ -38,11 +38,38 @@ mapa = px.scatter_map(
     map_style="carto-positron"
 )
 
+
 app.layout = html.Div([
     html.H1("MapMyTok"),
     html.P("Organiza tus lugares guardados de TikTok en un mapa interactivo."),
+
+    html.H3("Añadir un lugar"),
+
+    dcc.Input(
+        id="url-tiktok",
+        type="url",
+        placeholder="Pega aquí la URL de TikTok",
+        style={"width": "350px"}
+    ),
+
+    html.Button("Añadir lugar", id="boton-anadir"),
+    html.Div(id="mensaje-url"),
+
     dcc.Graph(figure=mapa)
 ])
+
+
+@app.callback(
+    Output("mensaje-url", "children"),
+    Input("boton-anadir", "n_clicks"),
+    State("url-tiktok", "value"),
+    prevent_initial_call=True
+)
+def comprobar_url(n_clicks, url):
+    if not url:
+        return "Introduce primero una URL de TikTok."
+
+    return "Enlace recibido correctamente."
 
 if __name__ == "__main__":
     app.run(debug=True)
