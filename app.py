@@ -2,6 +2,7 @@
 from dash import Dash, html, dcc, Input, Output, State
 import plotly.express as px
 import pandas as pd
+from urllib.parse import urlparse
 
 app = Dash(__name__)
 
@@ -65,11 +66,27 @@ app.layout = html.Div([
     State("url-tiktok", "value"),
     prevent_initial_call=True
 )
+
 def comprobar_url(n_clicks, url):
     if not url:
         return "Introduce primero una URL de TikTok."
 
-    return "Enlace recibido correctamente."
+    # Analizar la dirección web
+    enlace = urlparse(url.strip())
+
+    # Dominios de TikTok que aceptamos
+    dominios_validos = [
+        "www.tiktok.com",
+        "tiktok.com",
+        "vm.tiktok.com",
+        "vt.tiktok.com",
+        "m.tiktok.com"
+    ]
+
+    if enlace.scheme not in ["http", "https"] or enlace.hostname not in dominios_validos:
+        return "El enlace introducido no es una URL válida de TikTok."
+
+    return "Enlace de TikTok reconocido correctamente."
 
 if __name__ == "__main__":
     app.run(debug=True)
