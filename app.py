@@ -1,17 +1,42 @@
 
 from dash import Dash, html, dcc
 import plotly.express as px
+import pandas as pd
 
 app = Dash(__name__)
 
+# Lugares de ejemplo para probar la aplicación
+lugares = pd.DataFrame([
+    {
+        "nombre": "Chocolatería San Ginés",
+        "latitud": 40.4167,
+        "longitud": -3.7074,
+        "categoria": "Cafeterías"
+    },
+    {
+        "nombre": "Parque del Retiro",
+        "latitud": 40.4153,
+        "longitud": -3.6844,
+        "categoria": "Naturaleza"
+    },
+    {
+        "nombre": "Museo del Prado",
+        "latitud": 40.4138,
+        "longitud": -3.6921,
+        "categoria": "Cultura"
+    }
+])
+
 mapa = px.scatter_map(
-    lat=[40.4168],
-    lon=[-3.7038],
-    hover_name=["Madrid (ejemplo)"],
-    zoom=10,
+    lugares,
+    lat="latitud",
+    lon="longitud",
+    hover_name="nombre",
+    color="categoria",
+    zoom=12,
     center={"lat": 40.4168, "lon": -3.7038},
     map_style="carto-positron"
-    )
+)
 
 app.layout = html.Div([
     html.H1("MapMyTok"),
