@@ -3,6 +3,7 @@ from dash import Dash, html, dcc, Input, Output, State
 import plotly.express as px
 import pandas as pd
 from urllib.parse import urlparse
+from probar_tiktok import obtener_descripcion
 
 app = Dash(__name__)
 
@@ -86,7 +87,18 @@ def comprobar_url(n_clicks, url):
     if enlace.scheme not in ["http", "https"] or enlace.hostname not in dominios_validos:
         return "El enlace introducido no es una URL válida de TikTok."
 
-    return "Enlace de TikTok reconocido correctamente."
+    
+    # Intentar obtener la descripción del vídeo
+    descripcion = obtener_descripcion(url)
+
+    if descripcion:
+        return html.Div([
+            html.H4("Descripción del vídeo:"),
+            html.P(descripcion)
+        ])
+    else:
+        return "No se ha podido obtener la descripción del vídeo."
+
 
 if __name__ == "__main__":
     app.run(debug=True)
