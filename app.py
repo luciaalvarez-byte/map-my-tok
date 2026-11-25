@@ -4,6 +4,7 @@ import plotly.express as px
 import pandas as pd
 from urllib.parse import urlparse
 from probar_tiktok import obtener_descripcion
+from procesar_texto import extraer_pista_ubicacion
 
 app = Dash(__name__)
 
@@ -91,13 +92,26 @@ def comprobar_url(n_clicks, url):
     # Intentar obtener la descripción del vídeo
     descripcion = obtener_descripcion(url)
 
+    
     if descripcion:
+
+        # Buscar una posible ubicación en la descripción
+        pista = extraer_pista_ubicacion(descripcion)
+
         return html.Div([
             html.H4("Descripción del vídeo:"),
-            html.P(descripcion)
+            html.P(descripcion),
+
+            html.H4("Posible ubicación:"),
+            html.P(
+                pista if pista
+                else "No se ha encontrado una pista de ubicación."
+            )
         ])
+
     else:
         return "No se ha podido obtener la descripción del vídeo."
+
 
 
 if __name__ == "__main__":
