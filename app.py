@@ -1,5 +1,5 @@
 
-from dash import Dash, html, dcc, Input, Output, State, ctx
+from dash import Dash, html, dcc, Input, Output, State, ctx, no_update
 import plotly.express as px
 import pandas as pd
 from urllib.parse import urlparse
@@ -77,9 +77,10 @@ app.layout = html.Div([
 
     html.Div(id="resultado-busqueda"),
     dcc.Store(id="ubicacion-encontrada"),
+    dcc.Store(id="lugares-confirmados", data=[]),
     html.Button("Confirmar ubicación", id="boton-confirmar"),
     html.Div(id="mensaje-confirmacion"),
-    dcc.Graph(figure=mapa)
+    dcc.Graph(id="mapa-lugares", figure=mapa)
 ])
 
 
@@ -163,29 +164,85 @@ def buscar_ubicacion(n_clicks, direccion):
     return "No se ha encontrado ningún lugar con esa dirección.", None
 
 
+
 # Confirmar la ubicación encontrada
 @app.callback(
     Output("mensaje-confirmacion", "children"),
+    Output("lugares-confirmados", "data"),
     Input("boton-confirmar", "n_clicks"),
     Input("boton-buscar", "n_clicks"),
     State("ubicacion-encontrada", "data"),
+    State("lugares-confirmados", "data"),
     prevent_initial_call=True
 )
-def confirmar_ubicacion(n_clicks_confirmar, n_clicks_buscar, ubicacion):
+def confirmar_ubicacion(n_clicks_confirmar, n_clicks_buscar, ubicacion, confirmados):
 
-    # Si se inicia una nueva búsqueda, borrar la confirmación anterior
+    # Borrar la confirmación al iniciar una nueva búsqueda
     if ctx.triggered_id == "boton-buscar":
-        return ""
+        return "", no_update
 
     if not ubicacion:
-        return "Primero debes buscar una ubicación."
+        return "Primero debes buscar una ubicación.", no_update
 
-    return html.Div([
-        html.H4("Ubicación confirmada"),
-        html.P(ubicacion["nombre"]),
-        html.P(f"Latitud: {ubicacion['latitud']}"),
-        html.P(f"Longitud: {ubicacion['longitud']}")
-    ])
+    # Recuperar los lugares confirmados anteriormente
+    confirmados = confirmados or []
+
+    # Preparar el nuevo lugar
+    nuevo_lugar = {
+        "nombre": ubicacion["nombre"],
+        "latitud": ubicacion["latitud"],
+        "longitud": ubicacion["longitud"],
+        "categoria": "Sin categoría"
+    }
+
+    # Evitar añadir dos veces el mismo lugar
+    for lugar in confirmados:
+        if (lugar["latitud"] == nuevo_lugar["latitud"]
+                and lugar["longitud"] == nuevo_lugar["longitud"]):
+            return "Este lugar ya está confirmado.", no_update
+
+    # Añadir el lugar a nuestra lista
+    confirmados.append(nuevo_lugar)
+
+    return "¡Ubicación confirmada y añadida a la lista!", confirmados
+
+# Actualizar el mapa con los lugares confirmados
+@app.callback(
+    Output("mapa-lugares", "figure"),
+    Input("lugares-confirmados", "data")
+)
+def actualizar_mapa(confirmados):
+
+    # Empezar con los lugares de ejemplo
+    lugares_mapa = lugares.copy()
+
+    # Añadir los lugares confirmados por el usuario
+    if confirmados:
+        nuevos_lugares = pd.DataFrame(confirmados)
+
+        lugares_mapa = pd.concat(
+            [lugares_mapa, nuevos_lugares],
+            ignore_index=True
+        )
+
+    # Evitar marcadores duplicados en las mismas coordenadas
+    lugares_mapa = lugares_mapa.drop_duplicates(
+        subset=["latitud", "longitud"]
+    )
+
+    # Crear el mapa actualizado
+    mapa_actualizado = px.scatter_map(
+        lugares_mapa,
+        lat="latitud",
+        lon="longitud",
+        hover_name="nombre",
+        color="categoria",
+        zoom=12,
+        center={"lat": 40.4168, "lon": -3.7038},
+        map_style="carto-positron"
+    )
+
+    return mapa_actualizado
 
 if __name__ == "__main__":
     app.run(debug=True)
