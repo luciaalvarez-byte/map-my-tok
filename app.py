@@ -1,10 +1,11 @@
 
-from dash import Dash, html, dcc, Input, Output, State
+from dash import Dash, html, dcc, Input, Output, State, ctx
 import plotly.express as px
 import pandas as pd
 from urllib.parse import urlparse
 from probar_tiktok import obtener_descripcion
 from procesar_texto import extraer_pista_ubicacion
+from buscar_coordenadas import buscar_coordenadas
 
 app = Dash(__name__)
 
@@ -63,7 +64,21 @@ app.layout = html.Div([
 
     html.Button("Añadir lugar", id="boton-anadir"),
     html.Div(id="mensaje-url"),
+    html.H3("Buscar ubicación del lugar"),
 
+    dcc.Input(
+        id="direccion-busqueda",
+        type="text",
+        placeholder="Ej. Hotel Claridge, Madrid",
+        style={"width": "350px"}
+    ),
+
+    html.Button("Buscar ubicación", id="boton-buscar"),
+
+    html.Div(id="resultado-busqueda"),
+    dcc.Store(id="ubicacion-encontrada"),
+    html.Button("Confirmar ubicación", id="boton-confirmar"),
+    html.Div(id="mensaje-confirmacion"),
     dcc.Graph(figure=mapa)
 ])
 
@@ -119,6 +134,58 @@ def comprobar_url(n_clicks, url):
         return "No se ha podido obtener la descripción del vídeo."
 
 
+# Buscar las coordenadas de un lugar
+@app.callback(
+    Output("resultado-busqueda", "children"),
+    Output("ubicacion-encontrada", "data"),
+    Input("boton-buscar", "n_clicks"),
+    State("direccion-busqueda", "value"),
+    prevent_initial_call=True
+)
+def buscar_ubicacion(n_clicks, direccion):
+
+    if not direccion or not direccion.strip():
+        return "Introduce el nombre o la dirección de un lugar.", None
+
+    try:
+        resultado = buscar_coordenadas(direccion.strip())
+    except Exception:
+        return "No se ha podido consultar el servicio de ubicaciones.", None
+
+    if resultado:
+        return html.Div([
+            html.H4("Lugar encontrado:"),
+            html.P(resultado["nombre"]),
+            html.P(f"Latitud: {resultado['latitud']}"),
+            html.P(f"Longitud: {resultado['longitud']}")
+        ]), resultado
+
+    return "No se ha encontrado ningún lugar con esa dirección.", None
+
+
+# Confirmar la ubicación encontrada
+@app.callback(
+    Output("mensaje-confirmacion", "children"),
+    Input("boton-confirmar", "n_clicks"),
+    Input("boton-buscar", "n_clicks"),
+    State("ubicacion-encontrada", "data"),
+    prevent_initial_call=True
+)
+def confirmar_ubicacion(n_clicks_confirmar, n_clicks_buscar, ubicacion):
+
+    # Si se inicia una nueva búsqueda, borrar la confirmación anterior
+    if ctx.triggered_id == "boton-buscar":
+        return ""
+
+    if not ubicacion:
+        return "Primero debes buscar una ubicación."
+
+    return html.Div([
+        html.H4("Ubicación confirmada"),
+        html.P(ubicacion["nombre"]),
+        html.P(f"Latitud: {ubicacion['latitud']}"),
+        html.P(f"Longitud: {ubicacion['longitud']}")
+    ])
 
 if __name__ == "__main__":
     app.run(debug=True)
