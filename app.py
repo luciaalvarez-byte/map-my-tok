@@ -27,6 +27,12 @@ lugares = pd.DataFrame([
         "latitud": 40.4138,
         "longitud": -3.6921,
         "categoria": "Cultura"
+    },
+    {
+        "nombre": "Hotel Claridge",
+        "latitud": 40.4062862,
+        "longitud": -3.6693722,
+        "categoria": "Restaurantes"
     }
 ])
 

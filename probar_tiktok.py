@@ -2,7 +2,6 @@
 import subprocess
 import sys
 
-
 def obtener_descripcion(url):
     resultado = subprocess.run(
         [
@@ -19,7 +18,10 @@ def obtener_descripcion(url):
     if resultado.returncode == 0:
         return resultado.stdout.strip()
     else:
+        print("Error de yt-dlp:")
+        print(resultado.stderr)
         return None
+
 
 
 # Probar la función con un vídeo real
